@@ -192,7 +192,7 @@ contract VulnerableShop is Ownable {
     ///@notice Remove a sale from the list and do some slashing afterwards
     ///@param itemId The ID of the item which sale is being removed
     ///@param toBePaid If the seller should be paid or not
-    function deleteSale(uint256 itemId, bool toBePaid) public {
+    function deleteSale(uint256 itemId, bool toBePaid) internal {
         delete offered_items[itemId];
 
         /*
