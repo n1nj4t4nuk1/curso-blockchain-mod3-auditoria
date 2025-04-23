@@ -29,7 +29,7 @@ contract VulnerableDAO {
 
     mapping(uint256 disputeId => Dispute) public disputes;
     // Password to access the key functions
-    string private password;
+    bytes32 private passwordHash;
 
 
     /************************************** Events and modifiers *****************************************************/
@@ -42,10 +42,11 @@ contract VulnerableDAO {
         @param magicWord The password to access key features
      */
     modifier isAuthorized(string calldata magicWord) {
-        require(
-            keccak256(abi.encodePacked(magicWord)) == keccak256(abi.encodePacked(password)),
-            "Unauthorized");
-        _;
+	    require(
+	        keccak256(abi.encodePacked(magicWord)) == passwordHash,
+	        "Unauthorized"
+	    );
+	_;
     }
 
     /************************************** External  ****************************************************************/ 
@@ -55,7 +56,7 @@ contract VulnerableDAO {
         @param magicWord The password to access key features
     */
     constructor(string memory magicWord) {
-        password = magicWord;
+        passwordHash = keccak256(abi.encodePacked(magicWord));
     }
 
 
@@ -66,9 +67,9 @@ contract VulnerableDAO {
      */
     function updateConfig(
         string calldata magicWord, 
-        string calldata newMagicWord 
+        string calldata newMagicWordHash 
     ) external isAuthorized(magicWord) {
-        password = newMagicWord;
+        passwordHash = newMagicWordHash
 
         /*
         * DAO configuration logic goes here.
@@ -154,29 +155,20 @@ contract VulnerableDAO {
         @notice Run a PRNG to award a cool NFT to the user
         @param user The address of the elegible user
      */
-    function lotteryNFT(address user) internal {
-        uint256 randomNumber = uint8(
-            uint256(
-                keccak256(
-                    abi.encodePacked(
-                        blockhash(block.number - 1), 
-                        block.timestamp, 
-                        user
-        ))));
-
-        if (randomNumber < THRESHOLD   ) {
-
-            /*
-            * Award NFT logic goes here.
-            * Consider this missing piece of code to be correct, do not ponder
-            * about potential lack of validtaion or checks here
-            */
-            
-            emit AwardNFT(user);
-        }
-
-        
-    }
+	function lotteryNFT(address user) internal {
+	    uint256 randomNumber = uint8(
+	        uint256(
+	            keccak256(
+	                abi.encodePacked(
+	                    block.prevrandao, // en vez de blockhash
+	                    block.timestamp, 
+	                    user
+	    ))));
+	
+	    if (randomNumber < THRESHOLD) {
+	        emit AwardNFT(user);
+	    }
+	}
 
 
     /************************************** Views ********************************************************************/
