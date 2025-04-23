@@ -32,10 +32,10 @@ contract VulnerableInvestment {
 
 
     ///@notice  Checks that the caller is the admin
-    modifier onlyOwner() {
-        require(tx.origin == admin, "Unauthorized");
-        _;
-    }
+	modifier onlyOwner() {
+	    require(msg.sender == admin, "Unauthorized");
+	    _;
+	}
 
 
     ///@notice Transfers a percentage of the vested tokens to the caller as reward
@@ -83,27 +83,28 @@ contract VulnerableInvestment {
     ///@notice Distributes a percentage of the total vested to the beneficiaries. Before that, the caller will be 
     /// rewarded with a percentage of the distributed amount as detailed in the returnRewards modifier
     ///@param percentage The percentage of the vested tokens to distribute
-    function distributeBenefits(uint256 percentage) 
-        external 
-        returnRewards(percentage) 
-    {
-        //  Checks
-        require(total_invested >= MIN_INVESTED, "Not big enough to avoid rounding issues");
-        require(percentage < MAX_PERCENTAGE, "Should be below the max distribution percentage");
-        require(block.number - latest_distribution >= distribute_period, "Too soon");
+	function distributeBenefits(uint256 percentage) external {
+	    // Checks
+	    require(total_invested >= MIN_INVESTED, "Not big enough to avoid rounding issues");
+	    require(percentage < MAX_PERCENTAGE, "Should be below the max distribution percentage");
+	    require(block.number - latest_distribution >= distribute_period, "Too soon");
+	
+	    // Effects
+	    latest_distribution = block.number;
+	    uint256 amount = total_invested * percentage / PERCENT;
+	    total_invested -= amount;
+	
+	    // Interactions
+	    doDistribute(amount);
+	
+	    // Reward logic (new Interaction after all Effects)
+	    uint256 reward = amount / 1000; // 0.1% of amount
+	    (bool success, ) = payable(msg.sender).call{value: reward}("");
+	    require(success, "Reward payment failed");
+	
+	    emit Benefits(amount);
+	}
 
-        // Effects
-        latest_distribution = block.number;
-        // Calculate the amount to distribute as a percentage of the total vested
-        uint256 amount = total_invested * percentage / PERCENT;
-        // Subsctract the distributed amount from the total vested
-        total_invested -= amount;
-
-        //Interactions
-        doDistribute(amount);
- 
-        emit Benefits(amount);
-    }
 	
 
     /************************************** Internal *****************************************************************/
